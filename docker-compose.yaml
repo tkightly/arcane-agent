@@ -4,7 +4,7 @@ volumes:
 services:
   docker-socket-proxy:
     container_name: "dmz-docker-proxy"
-    image: "tecnativa/docker-socket-proxy:latest"
+    image: "tecnativa/docker-socket-proxy:v0.5.0"
     restart: "unless-stopped"
     environment:
       - "CONTAINERS=1"
@@ -29,7 +29,7 @@ services:
 
   arcane-agent:
     container_name: "arcane-agent"
-    image: "ghcr.io/getarcaneapp/agent:latest"
+    image: "ghcr.io/getarcaneapp/agent:v2.17.1"
     restart: "unless-stopped"
     depends_on:
       - "docker-socket-proxy"

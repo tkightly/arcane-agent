@@ -29,7 +29,7 @@ services:
 
   arcane-agent:
     container_name: "arcane-agent"
-    image: "ghcr.io/getarcaneapp/agent:v2.17.1"
+    image: "ghcr.io/getarcaneapp/agent:v2.17.3"
     restart: "unless-stopped"
     depends_on:
       - "docker-socket-proxy"

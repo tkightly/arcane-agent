@@ -9,7 +9,17 @@ services:
   # reverse proxy that passes the upgrade through.
   docker-socket-proxy:
     container_name: "dmz-docker-proxy"
-    image: "wollomatic/socket-proxy:1.13.2"
+    # Built from a pinned upstream commit: 1.13.2 (the latest release) lacks
+    # wollomatic/socket-proxy#197, so build-context uploads from Arcane fail
+    # with "unexpected EOF" / "connection reset by peer" when Docker starts
+    # responding before the upload finishes. Switch back to the published
+    # image once a release after 1.13.2 is out.
+    image: "socket-proxy-local:a519fb1"
+    build:
+      context: "https://github.com/wollomatic/socket-proxy.git#a519fb10facb5a8966250b8d83c9ea48ac30af10"
+      args:
+        VERSION: "1.13.2-a519fb1"
+    pull_policy: "build"
     restart: "unless-stopped"
     # Unprivileged user; the group must own /var/run/docker.sock on the
     # host. Find it with: stat -c '%g' /var/run/docker.sock

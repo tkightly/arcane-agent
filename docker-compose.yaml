@@ -16,10 +16,18 @@ services:
       - "PING=1"
       - "VERSION=1"
       - "INFO=1"
+      # Image builds: BUILD covers /build; SESSION and GRPC cover the
+      # BuildKit session (h2c upgrade on /session, plus /grpc). Without
+      # these, builds fail with "unable to upgrade to h2c" and HAProxy's
+      # "Request forbidden by administrative rules" 403. This lets the
+      # agent run any build on this host - fine for Arcane, which already
+      # manages containers, but keep it off other proxies.
+      - "BUILD=1"
+      - "SESSION=1"
+      - "GRPC=1"
       - "AUTH=0"
       - "SECRETS=0"
       - "EXEC=0"
-      - "BUILD=0"
       - "PLUGINS=0"
       - "NODES=0"
       - "SWARM=0"

@@ -1,65 +1,30 @@
+name: arcane-agent
+
+# Arcane Edge agent: dials out to the manager, so no inbound port is
+# needed on this host. See README.md.
+
 volumes:
   agent-data:
+    name: "arcane-agent-data"
 
 services:
-  # wollomatic/socket-proxy rather than tecnativa/linuxserver: those are
-  # HAProxy-based, and HAProxy answers BuildKit's "Upgrade: h2c" on
-  # POST /session with 400, so image builds fail with "unable to upgrade
-  # to h2c, received 400" whatever SESSION/GRPC are set to. This is a Go
-  # reverse proxy that passes the upgrade through.
-  docker-socket-proxy:
-    container_name: "dmz-docker-proxy"
-    # Maintainer's test build of main at the PR #196 merge, not a release.
-    # Docker >= 29.5 streams the POST /build response while still reading
-    # the build-context tar; 1.13.2 is half-duplex, drops the rest of the
-    # upload and builds fail with "unexpected EOF". Fixed upstream in
-    # wollomatic/socket-proxy#196 (issue #197) but unreleased. Go back to
-    # wollomatic/socket-proxy:<version> once a release after 1.13.2 ships;
-    # Renovate can't compare this tag with release versions.
-    image: "ghcr.io/wollomatic/socket-proxy:testing-10b89f5264b3a0afcdf2937affac58a0e3a410b8"
-    restart: "unless-stopped"
-    # Unprivileged user; the group must own /var/run/docker.sock on the
-    # host. Find it with: stat -c '%g' /var/run/docker.sock
-    user: "65534:${DOCKER_GID:-999}"
-    read_only: true
-    cap_drop:
-      - "ALL"
-    security_opt:
-      - "no-new-privileges:true"
-    # Patterns are Go regexps, anchored with ^...$ by the proxy. Anything
-    # not matched (exec, plugins, swarm, secrets, auth, ...) gets 403.
-    # Same scope as the old tecnativa flags (CONTAINERS, IMAGES, NETWORKS,
-    # VOLUMES, EVENTS, PING, VERSION, INFO, POST) plus image builds:
-    # /build, and /session + /grpc for the BuildKit session.
-    command:
-      - "-listenip=0.0.0.0"
-      - "-allowfrom=arcane-agent"
-      - "-allowHEAD=(/v[0-9.]+)?/_ping"
-      - "-allowGET=(/v[0-9.]+)?/((_ping|version|info|events)|(containers|images|networks|volumes)(/.*)?)"
-      - "-allowPOST=(/v[0-9.]+)?/((containers|images|networks|volumes)(/.*)?|build|session|grpc)"
-      - "-allowPUT=(/v[0-9.]+)?/containers/.+"
-      - "-allowDELETE=(/v[0-9.]+)?/(containers|images|networks|volumes)/.+"
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-
   arcane-agent:
     container_name: "arcane-agent"
     image: "ghcr.io/getarcaneapp/agent:v2.17.3"
     restart: "unless-stopped"
-    depends_on:
-      - "docker-socket-proxy"
     environment:
-      # EDGE_AGENT=true is Edge/push mode: this agent dials out to
-      # MANAGER_API_URL and negotiates a tunnel, matching an environment
-      # created as "Edge" in the manager UI (API URL shown there as
-      # edge://<name>). No inbound port needs to be open on this host.
-      # Direct/pull mode (AGENT_MODE=true) is the opposite: the manager
-      # dials in to this agent's :3553 instead, and MANAGER_API_URL is
-      # unused. The two modes are not interchangeable - they must match
-      # whatever the manager's environment record was created as.
+      - "PUID=1000"
+      - "PGID=1000"
+      - "TZ=UTC"
       - "EDGE_AGENT=true"
-      - "AGENT_TOKEN=${AGENT_TOKEN}"
-      - "MANAGER_API_URL=${MANAGER_API_URL}"
-      - "DOCKER_HOST=tcp://docker-socket-proxy:2375"
+      - "AGENT_TOKEN=${AGENT_TOKEN:?set AGENT_TOKEN in .env}"
+      - "MANAGER_API_URL=${MANAGER_API_URL:-https://arcane.internal.taucetifive.com:9553}"
     volumes:
+      # Direct socket rather than a socket proxy: the agent must be able to
+      # create containers, which is already full control of the host, so a
+      # proxy only blocks extras like exec while adding a moving part.
+      - "/var/run/docker.sock:/var/run/docker.sock"
       - "agent-data:/app/data"
+      # Projects are checked out on the host so their files are easy to
+      # reach. Arcane maps relative bind mounts through this mount.
+      - "${PROJECTS_PATH:-/opt/stacks}:/app/data/projects"

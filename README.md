@@ -41,6 +41,10 @@ group id changed.
 
 ## Updating
 
-Keep the agent on the same version as the manager. Arcane v3 renames the
-environment variables to `ARCANE_*`, so that upgrade needs the rename here
-too.
+Keep the agent on the same version as the manager: a v3 manager rejects
+v2 agents outright ("agent predates Arcane v3").
+
+Arcane v3 reads `ARCANE_AGENT_TOKEN` and `ARCANE_MANAGER_API_URL` and drops
+`EDGE_AGENT` (the image sets `ARCANE_AGENT=true` itself). The compose file
+sets those names, while `.env` keeps the short `AGENT_TOKEN` /
+`MANAGER_API_URL` keys, so existing hosts need no `.env` change.

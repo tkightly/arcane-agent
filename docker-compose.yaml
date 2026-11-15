@@ -16,9 +16,8 @@ services:
       - "PUID=1000"
       - "PGID=1000"
       - "TZ=UTC"
-      - "EDGE_AGENT=true"
-      - "AGENT_TOKEN=${AGENT_TOKEN:?set AGENT_TOKEN in .env}"
-      - "MANAGER_API_URL=${MANAGER_API_URL:-https://arcane.internal.taucetifive.com:9553}"
+      - "ARCANE_AGENT_TOKEN=${AGENT_TOKEN:?set AGENT_TOKEN in .env}"
+      - "ARCANE_MANAGER_API_URL=${MANAGER_API_URL:-https://arcane.internal.taucetifive.com:9553}"
     volumes:
       # Direct socket rather than a socket proxy: the agent must be able to
       # create containers, which is already full control of the host, so a

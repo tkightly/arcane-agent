@@ -10,4 +10,4 @@ permissions:
 
 jobs:
   compose:
-    uses: tkightly/shared-workflows/.github/workflows/compose-config.yml@v1.1.0
+    uses: tkightly/shared-workflows/.github/workflows/compose-config.yml@v1.3.0
